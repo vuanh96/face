@@ -86,6 +86,8 @@ def predict(type_predict):
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+
 if __name__ == '__main__':
     model = None
     type_recog = 2
@@ -103,4 +105,4 @@ if __name__ == '__main__':
     # model = training()
     model.load(file_yml)
 
-    predict("test_images/g7.JPG")
+    predict("camera")
