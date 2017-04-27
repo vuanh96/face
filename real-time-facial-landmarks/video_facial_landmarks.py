@@ -44,6 +44,8 @@ while True:
 
     # loop over the face detections
     for rect in rects:
+        x, y, z, t = rect.left(), rect.top(), rect.right(), rect.bottom()
+        cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
         # determine the facial landmarks for the face region, then
         # convert the facial landmark (x, y)-coordinates to a NumPy
         # array
