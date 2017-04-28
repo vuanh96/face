@@ -7,10 +7,8 @@ import numpy as np
 import os
 from skimage import io
 
-from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
-from keras.applications import VGG16, imagenet_utils
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -35,6 +33,7 @@ labels = []
 for rootdir, dirnames, filenames in os.walk(train_data_dir):
     for subdirname in dirnames:
         labels.append(subdirname)
+print(labels)
 
 num_label = len(labels)
 
@@ -69,15 +68,14 @@ def save_bottlebeck_features():
                     face_descriptors.append([[face_descriptor]])
                     classes.append(subdirname)
 
+    print(classes)
     np.save(file_data, face_descriptors)
     np.save(file_classes, classes)
 
 
 def train_top_model():
     data = np.load(file_data)
-    print(data.shape)
     classes = np.load(file_classes)
-    print(classes.shape)
 
     # transform the labels into vectors in the range [0, num_classes]-- this
     # generates a vector for each label where the index of the label
@@ -98,7 +96,8 @@ def train_top_model():
               epochs=500,
               batch_size=batch_size,
               verbose=2,
-              validation_data=(validation_data, validation_labels))
+              validation_data=(validation_data, validation_labels)
+              )
 
     # show the accuracy on the testing set
     print("[INFO] evaluating on testing set...")
@@ -128,11 +127,14 @@ def predict(imagePath):
 
         # loop over the predictions and display rank predictions + probabilities to our terminal
         P = []
-        for i in range(len(labels)):
+        for i in range(num_label):
             label = labels[i]
             prob = preds[i]
             P.append((label, prob))
         P.sort(key=lambda x: x[1], reverse=True)
+
+        cv2.putText(img, P[0][0], (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        print("Person :")
         for (i, (label, prob)) in enumerate(P):
             print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
 
@@ -150,7 +152,7 @@ if __name__ == '__main__':
 
     # save_bottlebeck_features()
     # train_top_model()
-    predict("group/g13.JPG")
+    predict("huy3-1.jpg")
 
     end = time()
     print("Time:{}s".format(end - start))
