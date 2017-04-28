@@ -6,13 +6,12 @@ import imutils
 import keras
 import numpy as np
 import os
-from imutils import face_utils
 
 from imutils.video import VideoStream
 from skimage import io
 
 from keras.models import Sequential
-from keras.layers import Dropout, Flatten, Dense
+from keras.layers import Dropout, Dense
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -41,10 +40,10 @@ for rootdir, dirnames, filenames in os.walk(train_data_dir):
 num_label = len(labels)
 
 # build model
-
+print("[INFO] building model ...")
 model = Sequential()
-model.add(Flatten(input_shape=(1, 1, 128)))
-model.add(Dense(256, activation='relu'))
+# model.add(Flatten(input_shape=(1, 1, 128)))
+model.add(Dense(256, activation='relu', input_dim=128))
 model.add(Dropout(0.5))
 model.add(Dense(num_label, activation='softmax'))
 
@@ -68,7 +67,7 @@ def save_bottlebeck_features():
                 for det in dets:
                     shape = sp(img, det)
                     face_descriptor = facerec.compute_face_descriptor(img, shape)
-                    face_descriptors.append([[face_descriptor]])
+                    face_descriptors.append(face_descriptor)
                     classes.append(subdirname)
 
     print(classes)
@@ -111,21 +110,17 @@ def train_top_model():
     model.save_weights(model_weights_path)
 
 
-def predict(type_recog):
-    if type_recog == "camera":
-        print("[INFO] camera sensor warming up...")
-        vs = VideoStream(-1).start()
-        time.sleep(2.0)
-    print("[INFO] load weights ...!")
+def predict_camera():
+    print("[INFO] load weights ...")
     model.load_weights(model_weights_path)
+    print("[INFO] camera sensor warming up...")
+    vs = VideoStream(-1).start()
+    time.sleep(2.0)
     while True:
         # grab the frame from the threaded video stream, resize it to
         # have a maximum width of 400 pixels, and convert it to
         # grayscale
-        if type_recog == "camera":
-            frame = vs.read()
-        else:
-            frame = cv2.imread(type_recog)
+        frame = vs.read()
         frame = imutils.resize(frame, width=600)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -137,9 +132,9 @@ def predict(type_recog):
             x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
             cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
 
-            shape = sp(frame, det)
+            shape = sp(gray, det)
             face_descriptor = facerec.compute_face_descriptor(frame, shape)
-            face_descriptor = np.array([[[face_descriptor]]])
+            face_descriptor = np.array([face_descriptor])
 
             # predict image with classes
             preds = model.predict(face_descriptor)[0]
@@ -170,12 +165,55 @@ def predict(type_recog):
     vs.stop()
 
 
+def predict(image_path):
+    print("[INFO] load weights ...")
+    model.load_weights(model_weights_path)
+
+    print("[INFO] predicting image ...")
+    frame = cv2.imread(image_path)
+    frame = imutils.resize(frame, width=600)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # detect faces in the grayscale frame
+    dets = detector(gray, 0)
+
+    # loop over the face detections
+    for det in dets:
+        x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
+        cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
+
+        shape = sp(gray, det)
+        face_descriptor = facerec.compute_face_descriptor(frame, shape)
+        face_descriptor = np.array([face_descriptor])
+
+        # predict image with classes
+        preds = model.predict(face_descriptor)[0]
+
+        # loop over the predictions and display rank predictions + probabilities to our terminal
+        P = []
+        for i in range(num_label):
+            label = labels[i]
+            prob = preds[i]
+            P.append((label, prob))
+        P.sort(key=lambda x: x[1], reverse=True)
+
+        cv2.putText(frame, P[0][0], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        print("Person :")
+        for (i, (label, prob)) in enumerate(P):
+            print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
+
+    # show the frame
+    cv2.imshow("Frame", frame)
+    cv2.waitKey(0)
+
+
 if __name__ == '__main__':
     start = time.time()
 
     # save_bottlebeck_features()
     # train_top_model()
-    predict("class/class8.jpg")
+    predict_camera()
+    # predict("group/g16.JPG")
 
     end = time.time()
     print("Time:{}s".format(end - start))
