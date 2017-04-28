@@ -1,10 +1,14 @@
-from time import time
+import time
 
 import cv2
 import dlib
+import imutils
 import keras
 import numpy as np
 import os
+from imutils import face_utils
+
+from imutils.video import VideoStream
 from skimage import io
 
 from keras.models import Sequential
@@ -31,9 +35,8 @@ facerec = dlib.face_recognition_model_v1(face_rec_model_path)
 # determine labels
 labels = []
 for rootdir, dirnames, filenames in os.walk(train_data_dir):
-    for subdirname in dirnames:
+    for subdirname in sorted(dirnames):
         labels.append(subdirname)
-print(labels)
 
 num_label = len(labels)
 
@@ -56,7 +59,7 @@ def save_bottlebeck_features():
     face_descriptors = []
     classes = []
     for rootdir, dirnames, filenames in os.walk(train_data_dir):
-        for subdirname in dirnames:
+        for subdirname in sorted(dirnames):
             subject_path = os.path.join(rootdir, subdirname)
             for filename in os.listdir(subject_path):
                 file_path = os.path.join(subject_path, filename)
@@ -108,51 +111,71 @@ def train_top_model():
     model.save_weights(model_weights_path)
 
 
-def predict(imagePath):
+def predict(type_recog):
+    if type_recog == "camera":
+        print("[INFO] camera sensor warming up...")
+        vs = VideoStream(-1).start()
+        time.sleep(2.0)
+    print("[INFO] load weights ...!")
     model.load_weights(model_weights_path)
-    print("load weights success!")
+    while True:
+        # grab the frame from the threaded video stream, resize it to
+        # have a maximum width of 400 pixels, and convert it to
+        # grayscale
+        if type_recog == "camera":
+            frame = vs.read()
+        else:
+            frame = cv2.imread(type_recog)
+        frame = imutils.resize(frame, width=600)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    img = io.imread(imagePath)
-    dets = detector(img, 1)
-    for det in dets:
-        x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
-        cv2.rectangle(img, (x, y), (z, t), (0, 255, 0), 2)
+        # detect faces in the grayscale frame
+        dets = detector(gray, 0)
 
-        shape = sp(img, det)
-        face_descriptor = facerec.compute_face_descriptor(img, shape)
-        face_descriptor = np.array([[[face_descriptor]]])
+        # loop over the face detections
+        for det in dets:
+            x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
+            cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
 
-        # predict image with classes
-        preds = model.predict(face_descriptor)[0]
+            shape = sp(frame, det)
+            face_descriptor = facerec.compute_face_descriptor(frame, shape)
+            face_descriptor = np.array([[[face_descriptor]]])
 
-        # loop over the predictions and display rank predictions + probabilities to our terminal
-        P = []
-        for i in range(num_label):
-            label = labels[i]
-            prob = preds[i]
-            P.append((label, prob))
-        P.sort(key=lambda x: x[1], reverse=True)
+            # predict image with classes
+            preds = model.predict(face_descriptor)[0]
 
-        cv2.putText(img, P[0][0], (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        print("Person :")
-        for (i, (label, prob)) in enumerate(P):
-            print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
+            # loop over the predictions and display rank predictions + probabilities to our terminal
+            P = []
+            for i in range(num_label):
+                label = labels[i]
+                prob = preds[i]
+                P.append((label, prob))
+            P.sort(key=lambda x: x[1], reverse=True)
 
-    # load the image via OpenCV, draw the top prediction on the image,
-    # and display the image to our screen
-    # orig = cv2.imread(imagePath)
-    # cv2.putText(orig, "Label: {}, {:.2f}%".format(P[0][0], P[0][1] * 100),
-    #             (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-    cv2.imshow("Classification", img)
-    cv2.waitKey(0)
+            cv2.putText(frame, P[0][0], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            print("Person :")
+            for (i, (label, prob)) in enumerate(P):
+                print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
+
+        # show the frame
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        # if the `q` key was pressed, break from the loop
+        if key == ord("q"):
+            break
+
+    # do a bit of cleanup
+    cv2.destroyAllWindows()
+    vs.stop()
 
 
 if __name__ == '__main__':
-    start = time()
+    start = time.time()
 
     # save_bottlebeck_features()
     # train_top_model()
-    predict("huy3-1.jpg")
+    predict("class/class8.jpg")
 
-    end = time()
+    end = time.time()
     print("Time:{}s".format(end - start))
