@@ -42,7 +42,6 @@ num_label = len(labels)
 # build model
 print("[INFO] building model ...")
 model = Sequential()
-# model.add(Flatten(input_shape=(1, 1, 128)))
 model.add(Dense(256, activation='relu', input_dim=128))
 model.add(Dropout(0.5))
 model.add(Dense(num_label, activation='softmax'))
@@ -170,7 +169,8 @@ def predict(image_path):
     model.load_weights(model_weights_path)
 
     print("[INFO] predicting image ...")
-    frame = cv2.imread(image_path)
+    # frame = cv2.imread(image_path)
+    frame = io.imread(image_path)
     frame = imutils.resize(frame, width=600)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -178,6 +178,7 @@ def predict(image_path):
     dets = detector(gray, 0)
 
     # loop over the face detections
+    print("Number detected:", len(dets))
     for det in dets:
         x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
         cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
@@ -212,8 +213,8 @@ if __name__ == '__main__':
 
     # save_bottlebeck_features()
     # train_top_model()
-    predict_camera()
-    # predict("group/g16.JPG")
+    # predict_camera()
+    predict("group/12h_1.jpg")
 
     end = time.time()
     print("Time:{}s".format(end - start))
