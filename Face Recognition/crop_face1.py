@@ -61,4 +61,4 @@ def crop(images_dir, images_crop_dir):
 
     print("Crop finished")
 
-crop("images1", "at1")
+crop("images1", "at20")

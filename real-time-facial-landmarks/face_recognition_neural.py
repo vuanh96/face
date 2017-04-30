@@ -14,14 +14,15 @@ from keras.models import Sequential
 from keras.layers import Dropout, Dense
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
 
 img_width, img_height = 100, 100
 batch_size = 16
 
-train_data_dir = "at"
-file_data = "data.npy"
-file_classes = "classes.npy"
+train_data_dir = "at20"
+file_data = "data1.npy"
+file_classes = "classes1.npy"
 model_weights_path = "model_weights.h5"
 
 predictor_path = "shape_predictor_68_face_landmarks.dat"
@@ -51,8 +52,8 @@ model.compile(loss=keras.losses.categorical_crossentropy,
               metrics=['accuracy'])
 
 
-def save_bottlebeck_features():
-    print("[INFO] compute descriptor.......")
+def save_features():
+    print("[INFO:] compute descriptor.......")
 
     face_descriptors = []
     classes = []
@@ -68,13 +69,47 @@ def save_bottlebeck_features():
                     face_descriptor = facerec.compute_face_descriptor(img, shape)
                     face_descriptors.append(face_descriptor)
                     classes.append(subdirname)
-
-    print(classes)
     np.save(file_data, face_descriptors)
     np.save(file_classes, classes)
 
 
-def train_top_model():
+def kNN(n_neighbors, image_path):
+    data = np.load(file_data)
+    classes = np.load(file_classes)
+
+    print("[INFO] training classifier...")
+    model = KNeighborsClassifier(n_neighbors=n_neighbors)
+    model.fit(data, classes)
+
+    print("[INFO] predicting image ...")
+    frame = cv2.imread(image_path, 1)
+    if len(frame[0]) > 1000:
+        frame = imutils.resize(frame, width=1000)
+
+    # detect faces in the grayscale frame
+    dets = detector(frame, 1)
+
+    # loop over the face detections
+    print("Number detected:", len(dets))
+    for det in dets:
+        x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
+        cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
+
+        shape = sp(frame, det)
+        face_descriptor = facerec.compute_face_descriptor(frame, shape)
+        face_descriptor = np.array([face_descriptor])
+
+        # predict image with classes
+        pred = model.predict(face_descriptor)[0]
+
+        cv2.putText(frame, pred.title(), (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+    # show the frame
+    cv2.imshow("Frame", frame)
+    cv2.waitKey(0)
+
+
+def train_model():
     data = np.load(file_data)
     classes = np.load(file_classes)
 
@@ -113,25 +148,23 @@ def predict_camera():
     print("[INFO] load weights ...")
     model.load_weights(model_weights_path)
     print("[INFO] camera sensor warming up...")
-    vs = VideoStream(-1).start()
+    vs = VideoStream(0).start()
     time.sleep(2.0)
     while True:
         # grab the frame from the threaded video stream, resize it to
         # have a maximum width of 400 pixels, and convert it to
         # grayscale
         frame = vs.read()
-        frame = imutils.resize(frame, width=600)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # detect faces in the grayscale frame
-        dets = detector(gray, 0)
+        dets = detector(frame, 0)
 
         # loop over the face detections
         for det in dets:
             x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
             cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
 
-            shape = sp(gray, det)
+            shape = sp(frame, det)
             face_descriptor = facerec.compute_face_descriptor(frame, shape)
             face_descriptor = np.array([face_descriptor])
 
@@ -143,6 +176,7 @@ def predict_camera():
             for i in range(num_label):
                 label = labels[i]
                 prob = preds[i]
+                print(model)
                 P.append((label, prob))
             P.sort(key=lambda x: x[1], reverse=True)
 
@@ -169,13 +203,12 @@ def predict(image_path):
     model.load_weights(model_weights_path)
 
     print("[INFO] predicting image ...")
-    # frame = cv2.imread(image_path)
-    frame = io.imread(image_path)
-    frame = imutils.resize(frame, width=600)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame = cv2.imread(image_path, 1)
+    if len(frame[0]) > 1000:
+        frame = imutils.resize(frame, width=1000)
 
     # detect faces in the grayscale frame
-    dets = detector(gray, 0)
+    dets = detector(frame, 1)
 
     # loop over the face detections
     print("Number detected:", len(dets))
@@ -183,7 +216,7 @@ def predict(image_path):
         x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
         cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
 
-        shape = sp(gray, det)
+        shape = sp(frame, det)
         face_descriptor = facerec.compute_face_descriptor(frame, shape)
         face_descriptor = np.array([face_descriptor])
 
@@ -211,10 +244,12 @@ def predict(image_path):
 if __name__ == '__main__':
     start = time.time()
 
-    # save_bottlebeck_features()
-    # train_top_model()
+    # save_features()
+    # train_model()
     # predict_camera()
-    predict("group/12h_1.jpg")
+    # predict("class/class2.jpg")
+
+    kNN(10, "group/g19.JPG")
 
     end = time.time()
     print("Time:{}s".format(end - start))
