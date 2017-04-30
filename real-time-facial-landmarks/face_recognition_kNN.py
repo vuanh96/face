@@ -3,19 +3,12 @@ import time
 import cv2
 import dlib
 import imutils
-import keras
 import numpy as np
 import os
 
 from imutils.video import VideoStream
 from skimage import io
-
-from keras.models import Sequential
-from keras.layers import Dropout, Dense
-from keras.utils import np_utils
-from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import LabelEncoder
 
 img_width, img_height = 100, 100
 batch_size = 16
