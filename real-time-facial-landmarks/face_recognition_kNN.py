@@ -10,9 +10,6 @@ from imutils.video import VideoStream
 from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
 
-img_width, img_height = 100, 100
-batch_size = 16
-
 train_data_dir = "at20"
 file_data = "data1.npy"
 file_classes = "classes1.npy"

@@ -14,15 +14,14 @@ from keras.models import Sequential
 from keras.layers import Dropout, Dense
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder
 
 img_width, img_height = 100, 100
 batch_size = 16
 
 train_data_dir = "at20"
-file_data = "data1.npy"
-file_classes = "classes1.npy"
+file_data = "data.npy"
+file_classes = "classes.npy"
 model_weights_path = "model_weights.h5"
 
 predictor_path = "shape_predictor_68_face_landmarks.dat"
@@ -73,42 +72,6 @@ def save_features():
     np.save(file_classes, classes)
 
 
-def kNN(n_neighbors, image_path):
-    data = np.load(file_data)
-    classes = np.load(file_classes)
-
-    print("[INFO] training classifier...")
-    model = KNeighborsClassifier(n_neighbors=n_neighbors)
-    model.fit(data, classes)
-
-    print("[INFO] predicting image ...")
-    frame = cv2.imread(image_path, 1)
-    if len(frame[0]) > 1000:
-        frame = imutils.resize(frame, width=1000)
-
-    # detect faces in the grayscale frame
-    dets = detector(frame, 1)
-
-    # loop over the face detections
-    print("Number detected:", len(dets))
-    for det in dets:
-        x, y, z, t = det.left(), det.top(), det.right(), det.bottom()
-        cv2.rectangle(frame, (x, y), (z, t), (0, 255, 0), 2)
-
-        shape = sp(frame, det)
-        face_descriptor = facerec.compute_face_descriptor(frame, shape)
-        face_descriptor = np.array([face_descriptor])
-
-        # predict image with classes
-        pred = model.predict(face_descriptor)[0]
-
-        cv2.putText(frame, pred.title(), (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-    # show the frame
-    cv2.imshow("Frame", frame)
-    cv2.waitKey(0)
-
-
 def train_model():
     data = np.load(file_data)
     classes = np.load(file_classes)
@@ -129,7 +92,7 @@ def train_model():
         trainData, trainLabels, test_size=0.1, random_state=5)
     print("[INFO] training data...")
     model.fit(train_data, train_labels,
-              epochs=500,
+              epochs=1000,
               batch_size=batch_size,
               verbose=2,
               validation_data=(validation_data, validation_labels)
@@ -245,11 +208,14 @@ if __name__ == '__main__':
     start = time.time()
 
     # save_features()
-    # train_model()
+    train_model()
     # predict_camera()
     # predict("class/class2.jpg")
 
-    kNN(10, "group/g19.JPG")
+    image_dir = "class"
+    for filename in sorted(os.listdir(image_dir)):
+        file_path = os.path.join(image_dir, filename)
+        predict(file_path)
 
     end = time.time()
     print("Time:{}s".format(end - start))
