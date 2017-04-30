@@ -208,11 +208,11 @@ if __name__ == '__main__':
     start = time.time()
 
     # save_features()
-    train_model()
+    # train_model()
     # predict_camera()
     # predict("class/class2.jpg")
 
-    image_dir = "class"
+    image_dir = "test"
     for filename in sorted(os.listdir(image_dir)):
         file_path = os.path.join(image_dir, filename)
         predict(file_path)

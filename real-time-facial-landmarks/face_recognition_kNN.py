@@ -11,8 +11,8 @@ from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
 
 train_data_dir = "at20"
-file_data = "data1.npy"
-file_classes = "classes1.npy"
+file_data = "data.npy"
+file_classes = "classes.npy"
 
 predictor_path = "shape_predictor_68_face_landmarks.dat"
 face_rec_model_path = "dlib_face_recognition_resnet_model_v1.dat"
@@ -131,7 +131,12 @@ if __name__ == '__main__':
 
     # save_features()
     # predict_camera()
-    predict("class/class3.jpg")
+    # predict("class/class3.jpg")
+
+    image_dir = "group"
+    for filename in sorted(os.listdir(image_dir)):
+        file_path = os.path.join(image_dir, filename)
+        predict(file_path)
 
     end = time.time()
     print("Time:{}s".format(end - start))
