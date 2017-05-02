@@ -8,8 +8,6 @@ import numpy as np
 import os
 
 from imutils.video import VideoStream
-from skimage import io
-
 from keras.models import Sequential
 from keras.layers import Dropout, Dense
 from keras.utils import np_utils
@@ -52,7 +50,7 @@ model.compile(loss=keras.losses.categorical_crossentropy,
 
 
 def save_features():
-    print("[INFO:] compute descriptor.......")
+    print("[INFO] compute descriptor.......")
 
     face_descriptors = []
     classes = []
@@ -61,7 +59,7 @@ def save_features():
             subject_path = os.path.join(rootdir, subdirname)
             for filename in os.listdir(subject_path):
                 file_path = os.path.join(subject_path, filename)
-                img = io.imread(file_path)
+                img = cv2.imread(file_path)
                 dets = detector(img, 1)
                 for det in dets:
                     shape = sp(img, det)
@@ -92,7 +90,7 @@ def train_model():
         trainData, trainLabels, test_size=0.1, random_state=5)
     print("[INFO] training data...")
     model.fit(train_data, train_labels,
-              epochs=1000,
+              epochs=1500,
               batch_size=batch_size,
               verbose=2,
               validation_data=(validation_data, validation_labels)
@@ -212,7 +210,7 @@ if __name__ == '__main__':
     # predict_camera()
     # predict("class/class2.jpg")
 
-    image_dir = "test"
+    image_dir = "group"
     for filename in sorted(os.listdir(image_dir)):
         file_path = os.path.join(image_dir, filename)
         predict(file_path)
