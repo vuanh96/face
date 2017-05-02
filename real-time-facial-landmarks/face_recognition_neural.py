@@ -57,6 +57,7 @@ def save_features():
     for rootdir, dirnames, filenames in os.walk(train_data_dir):
         for subdirname in sorted(dirnames):
             subject_path = os.path.join(rootdir, subdirname)
+            it = 0
             for filename in os.listdir(subject_path):
                 file_path = os.path.join(subject_path, filename)
                 img = cv2.imread(file_path)
@@ -66,6 +67,8 @@ def save_features():
                     face_descriptor = facerec.compute_face_descriptor(img, shape)
                     face_descriptors.append(face_descriptor)
                     classes.append(subdirname)
+                    it += 1
+            print(subdirname, " : ", it, " face detected")
     np.save(file_data, face_descriptors)
     np.save(file_classes, classes)
 
@@ -137,13 +140,12 @@ def predict_camera():
             for i in range(num_label):
                 label = labels[i]
                 prob = preds[i]
-                print(model)
                 P.append((label, prob))
             P.sort(key=lambda x: x[1], reverse=True)
 
             cv2.putText(frame, P[0][0], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             print("Person :")
-            for (i, (label, prob)) in enumerate(P):
+            for (i, (label, prob)) in enumerate(P[0:5]):
                 print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
 
         # show the frame
@@ -194,7 +196,7 @@ def predict(image_path):
 
         cv2.putText(frame, P[0][0], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         print("Person :")
-        for (i, (label, prob)) in enumerate(P):
+        for (i, (label, prob)) in enumerate(P[0:5]):
             print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
 
     # show the frame
@@ -207,13 +209,13 @@ if __name__ == '__main__':
 
     # save_features()
     # train_model()
-    # predict_camera()
+    predict_camera()
     # predict("class/class2.jpg")
 
-    image_dir = "group"
-    for filename in sorted(os.listdir(image_dir)):
-        file_path = os.path.join(image_dir, filename)
-        predict(file_path)
+    # image_dir = "group"
+    # for filename in sorted(os.listdir(image_dir)):
+    #     file_path = os.path.join(image_dir, filename)
+    #     predict(file_path)
 
     end = time.time()
     print("Time:{}s".format(end - start))
