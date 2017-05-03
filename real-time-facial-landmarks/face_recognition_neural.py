@@ -23,7 +23,7 @@ file_classes = "classes.npy"
 model_weights_path = "model_weights.h5"
 
 predictor_path = "shape_predictor_68_face_landmarks.dat"
-face_rec_model_path = "dlib_face_recognition_resnet_model_v1.dat"
+face_rec_model_path = "dlib_face_recognition_resnet_model_v1.dat"  # resnet-34
 
 detector = dlib.get_frontal_face_detector()
 sp = dlib.shape_predictor(predictor_path)
