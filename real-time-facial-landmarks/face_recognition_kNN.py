@@ -10,7 +10,7 @@ from imutils.video import VideoStream
 from skimage import io
 from sklearn.neighbors import KNeighborsClassifier
 
-train_data_dir = "at20"
+train_data_dir = "at10"
 file_data = "data.npy"
 file_classes = "classes.npy"
 

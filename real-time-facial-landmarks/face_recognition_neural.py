@@ -17,7 +17,7 @@ from sklearn.preprocessing import LabelEncoder
 img_width, img_height = 100, 100
 batch_size = 16
 
-train_data_dir = "at20"
+train_data_dir = "at10"
 file_data = "data.npy"
 file_classes = "classes.npy"
 model_weights_path = "model_weights.h5"
@@ -31,9 +31,9 @@ facerec = dlib.face_recognition_model_v1(face_rec_model_path)
 
 # determine labels
 labels = []
-for rootdir, dirnames, filenames in os.walk(train_data_dir):
-    for subdirname in sorted(dirnames):
-        labels.append(subdirname)
+for subdir in sorted(os.listdir(train_data_dir)):
+    if os.path.isdir(os.path.join(train_data_dir, subdir)):
+        labels.append(subdir)
 
 num_label = len(labels)
 
