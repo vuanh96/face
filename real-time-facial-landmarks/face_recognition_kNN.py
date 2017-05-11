@@ -131,12 +131,12 @@ if __name__ == '__main__':
 
     # save_features()
     # predict_camera()
-    # predict("class/class3.jpg")
+    predict("class/class2.jpg")
 
-    image_dir = "group"
-    for filename in sorted(os.listdir(image_dir)):
-        file_path = os.path.join(image_dir, filename)
-        predict(file_path)
+    # image_dir = "group"
+    # for filename in sorted(os.listdir(image_dir)):
+    #     file_path = os.path.join(image_dir, filename)
+    #     predict(file_path)
 
     end = time.time()
     print("Time:{}s".format(end - start))

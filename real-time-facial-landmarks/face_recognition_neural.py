@@ -18,9 +18,9 @@ img_width, img_height = 100, 100
 batch_size = 16
 
 train_data_dir = "at10"
-file_data = "data.npy"
-file_classes = "classes.npy"
-model_weights_path = "model_weights.h5"
+file_data = "data2.npy"
+file_classes = "classes2.npy"
+model_weights_path = "model_weights2.h5"
 
 predictor_path = "shape_predictor_68_face_landmarks.dat"
 face_rec_model_path = "dlib_face_recognition_resnet_model_v1.dat"  # resnet-34
@@ -61,7 +61,7 @@ def save_features():
             for filename in os.listdir(subject_path):
                 file_path = os.path.join(subject_path, filename)
                 img = cv2.imread(file_path)
-                dets = detector(img, 1)
+                dets = detector(img, 2)
                 for det in dets:
                     shape = sp(img, det)
                     face_descriptor = facerec.compute_face_descriptor(img, shape)
@@ -92,6 +92,7 @@ def train_model():
     (train_data, validation_data, train_labels, validation_labels) = train_test_split(
         trainData, trainLabels, test_size=0.1, random_state=5)
     print("[INFO] training data...")
+    model.load_weights(model_weights_path)
     model.fit(train_data, train_labels,
               epochs=1500,
               batch_size=batch_size,
@@ -171,7 +172,7 @@ def predict(image_path):
         frame = imutils.resize(frame, width=1000)
 
     # detect faces in the grayscale frame
-    dets = detector(frame, 1)
+    dets = detector(frame, 2)
 
     # loop over the face detections
     print("Number detected:", len(dets))
@@ -194,7 +195,10 @@ def predict(image_path):
             P.append((label, prob))
         P.sort(key=lambda x: x[1], reverse=True)
 
-        cv2.putText(frame, P[0][0], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        if P[0][1] < 0.7:
+            cv2.putText(frame, "?", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        else:
+            cv2.putText(frame, P[0][0]+str(P[0][1]), (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         print("Person :")
         for (i, (label, prob)) in enumerate(P[0:5]):
             print("{}. {}: {:.2f}%".format(i + 1, label, prob * 100))
@@ -209,13 +213,13 @@ if __name__ == '__main__':
 
     # save_features()
     # train_model()
-    predict_camera()
+    # predict_camera()
     # predict("class/class2.jpg")
 
-    # image_dir = "group"
-    # for filename in sorted(os.listdir(image_dir)):
-    #     file_path = os.path.join(image_dir, filename)
-    #     predict(file_path)
+    image_dir = "test"
+    for filename in sorted(os.listdir(image_dir)):
+        file_path = os.path.join(image_dir, filename)
+        predict(file_path)
 
     end = time.time()
     print("Time:{}s".format(end - start))
